@@ -1,0 +1,135 @@
+\PassOptionsToPackage{dvipsnames}{xcolor}
+\documentclass{beamer}
+\usetheme{Warsaw}
+\usepackage[acronym]{glossaries}
+% for two columns
+\usepackage{glossary-super}
+%\glsdisablehyper %This disables hyper links to glossary items
+\input{acr_and_sym}
+\usepackage{cleveref}
+\title{Multiple Object Tracking: Fundamentals}
+\author{Dr. Waqas Afzal}
+\begin{document}
+\begin{frame}[plain]
+    \maketitle
+\end{frame}
+\begin{frame}{Scope}
+	\begin{itemize}
+		\item An introduction to \gls{mot} using multiple sensors.
+		\item In this part fundamentals of tracking will be covered.
+	\end{itemize}
+\end{frame}
+\begin{frame}{Introduction}
+	\begin{itemize}
+		\item Multiple sensors-multiple target tracking scenario.
+		\item Associating tracks from multiple sensors to a target.
+		\item Errors can affect operators ability to analyze formations and consequently, the intent.
+	\end{itemize}
+\end{frame}
+\begin{frame}{Introduction}{Challenges in \gls{mot}}	
+	\begin{itemize}
+		\item The first challenge is detecting objects. Since the number of dynamic objects is unknown, detection needs to be done at each time step.
+		\item The states of the detected objects are also unknown, thus their states need to be estimated at each time step.
+		\item New objects can enter the sensor’s range and objects detected in the previous time step can leave the sensor’s range.
+		\item Objects can occlude one another leading to missed detections.
+		\item False alarms or missed detections due to inherent sensor noise.
+		\item Data association
+		\begin{itemize}
+			\item which detections are from objects detected previously.
+			\item which detections are from new objects in the sensors range.
+			\item false detections (clutter).
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+\begin{frame}{Introduction}{\acrfull{sot} and \acrfull{mot}}
+	\begin{itemize}
+		\item \textbf{\acrfull{sot}}: \acrshort{sot} is a
+		filtering problem. It can be described as the sequential processing of noisy sensor measurements to determine an object’s state:
+		\begin{itemize}
+			\item Position.
+			\item Other properties like kinematics, etc.
+			\item Other attributes related to the detected object like \gls{esm} data.
+		\end{itemize}
+		\item \textbf{\acrfull{mot}}: \gls{mot} is the sequential processing of noisy sensor measurements to determine
+		\begin{itemize}
+			\item the number of dynamic objects,
+			\item and each dynamic object’s state.
+		\end{itemize}
+		Simply put, \gls{mot}, jointly detects object and applies \gls{sot} to each of these objects.
+	\end{itemize}
+\end{frame}
+\begin{frame}{Introduction}{Types of Tracking}
+	\begin{enumerate}
+		\item \textbf{Point Object Tracking:} a single detection is returned per object per time step.
+		\item \textbf{Extended Object Tracking:} multiple detections are returned per object per time step.
+		\item \textbf{Group Object Tracking:} multiple resolvable objects are treated as a group per time step.
+		\item \textbf{Tracking with Muli-Path Propagation: } tracking \gls{nlos} dynamic objects.
+		\item \textbf{Tracking with Unresolved Measurements:} multiple objects return a single measurement.
+	\end{enumerate}
+\end{frame}
+\section{Bayesian Filtering}
+\begin{frame}{Bayesian Filtering}{Introduction}
+	\begin{itemize}
+		\item Tracking is basically detection of dynamic objects and estimation of their hidden states in the presence of uncertainty.
+		\item Bayesian filters have been shown to perform well in estimating hidden states in the presence of uncertainty.
+		\item All Bayesian filters successively follow a two step process.
+		\begin{itemize}
+			\item \textbf{Motion Update (Prediction)}: Use a motion model to predict the state of the objects in the next time-step.
+			\item  \textbf{Measurement Update}: Update the object state’s distributions using a measurement model based on the measurement obtained in the current time-
+			step.
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+\begin{frame}{Bayesian Filtering}{Nomenclature}
+	\begin{itemize}
+		\item $\gls{ostate}_k$ is the state vector of an object at time $k$.
+		\item $\gls{msmt}_k$ is the measurement vector at time $k$ and $\gls{msmt}_{1:\tau}=(\gls{msmt}_1, \gls{msmt}_2, \dots, \gls{msmt}_\tau)$ is a sequence of measurements upto time $\tau$.
+		\item \textbf{Bayesian Filtering Recursion}
+		\begin{itemize}
+			\item \textbf{Prediction (Chapman-Kolmongorov Equation)}
+			\begin{equation}
+				\label{eq:prior}
+				{\color{OliveGreen}p(\gls{ostate}_k|\gls{msmt}_{1:k-1})} = \displaystyle\int p(\gls{ostate}_k|\gls{ostate}_{k-1}){\color{BrickRed}p(\gls{ostate}_{k-1}|\gls{msmt}_{1:k-1})} d\gls{ostate}_{k-1}
+			\end{equation}
+			\item \textbf{Update (Bayes Rule)}
+			\begin{equation}
+				\label{eq:posterior}
+				{\color{BrickRed}p(\gls{ostate}_k|\gls{msmt}_{1:k})} = 
+				\dfrac{p(\gls{msmt}_k|\gls{ostate}_k){\color{OliveGreen}p(\gls{ostate}_k|\gls{msmt}_{1:k-1})}}{\color{NavyBlue}p(\gls{msmt}_k|\gls{msmt}_{1:k-1})}
+			\end{equation}
+			\item \textbf{Predicted Likelihood (Distribution/Probability of Evidence)}
+			\begin{equation}
+				{\color{NavyBlue}p(\gls{msmt}_k|\gls{msmt}_{1:k-1})} = \displaystyle\int p(\gls{msmt}_k|\gls{ostate}_k)p(\gls{ostate}_k|\gls{msmt}_{1:k-1}) d\gls{ostate}_k
+			\end{equation}
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+\begin{frame}{Bayesian Filtering}{Nomenclature}
+	\textbf{Bayes Update}:
+	\begin{equation}
+		\label{eq:posterior}
+		{\color{BrickRed}p(\gls{ostate}_k|\gls{msmt}_{1:k})} = 
+		\dfrac{p(\gls{msmt}_k|\gls{ostate}_k){\color{OliveGreen}p(\gls{ostate}_k|\gls{msmt}_{1:k-1})}}{\color{NavyBlue}p(\gls{msmt}_k|\gls{msmt}_{1:k-1})}\nonumber
+	\end{equation}
+	\begin{align}
+		{\color{BrickRed}p(\gls{ostate}_k|\gls{msmt}_{1:k})} &\to \text{Posterior.}\nonumber\\
+		p(\gls{msmt}_k|\gls{ostate}_k) &\to \text{Measurement Likelihood.}\nonumber\\
+		{\color{OliveGreen}p(\gls{ostate}_k|\gls{msmt}_{1:k-1})} &\to \text{Prior.}\nonumber\\
+		{\color{NavyBlue}p(\gls{msmt}_k|\gls{msmt}_{1:k-1})} &\to \text{Predicted Likelihood.}\nonumber
+	\end{align}
+\end{frame}
+\begin{frame}{Bayesian Filtering}{Nomenclature}
+	Bayesian filtering alternatively applies the prediction and measurement updates to update the posterior of the object state at each time step.
+	\begin{align}
+		\text{Initial: }&p(\gls{ostate}_1)\nonumber\\
+		\text{Update: }&p(\gls{ostate}_1 | \gls{msmt}_1)\nonumber\\
+		\text{Prediction: }&p(\gls{ostate}_2 | \gls{msmt}_1)\nonumber\\
+		\text{Update: }&p(\gls{ostate}_2 | \gls{msmt}_{1:2})\nonumber\\
+		\text{Prediction: }&p(\gls{ostate}_3 | \gls{msmt}_{1:2})\nonumber\\
+		\text{Update: }&p(\gls{ostate}_3 | \gls{msmt}_{1:3})\nonumber\\
+		\text{Prediction: }&p(\gls{ostate}_4 | \gls{msmt}_{1:3})\nonumber\\
+		\text{Update: }&p(\gls{ostate}_4 | \gls{msmt}_{1:4})\nonumber\\
+		\text{Prediction: }&p(\gls{ostate}_5 | \gls{msmt}_{1:4})\nonumber
+	\end{align}
+\end{frame}
+\end{document}

@@ -1,0 +1,78 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Syntax for adding new acronym
+%
+%\newacronym[longplural={plural different from addind s}]{label}{acronym}{Full form}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Syntax for adding new symbol
+%
+% \newglossaryentry{label}{
+	% name={name of symbol},
+	% description={desription of symbol},
+	% symbol={symbol if math use \ensuremath{.}},
+	% plural={plural},  %if plural is different from addind s to the end
+	% sort={name for sorting alphabetically}
+	% }
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\newcommand{\sym}[4]{%
+	\newglossaryentry{#1}{%
+		name={#2},
+		description={#3},%symbol={#2},
+		sort={#4}
+	}%
+}%
+%Define symbols here
+% example definition
+%\sym{wsp}{\ensuremath{\mathcal{W}}}{Denotes workspace, the environment in which the agent exists.}{Workspace}
+\sym{msmatrix}{\ensuremath{Z}}{Measurement matrix}{msmatrix}
+\sym{omatrix}{\ensuremath{X}}{Object state matrix}{omatrix}
+\sym{omsmatrix}{\ensuremath{O}}{Object measurement matrix}{omsmatrix}
+\sym{cmsmatrix}{\ensuremath{C}}{Clutter measurement matrix}{cmsmatrix}
+\sym{msmt}{\ensuremath{\mathbf{z}}}{Measurement vector}{msmt}
+\sym{omsmt}{\ensuremath{\mathbf{o}}}{Object measurement vector}{omsmt}
+\sym{cmsmt}{\ensuremath{\mathbf{c}}}{Clutter measurement vector}{cmsmt}
+\sym{ostate}{\ensuremath{\mathbf{x}}}{Object state vector}{ostate}
+\sym{tstep}{\ensuremath{k}}{Time step}{time}
+\sym{m}{\ensuremath{m}}{Number of measurements}{Nmsmt}
+\sym{dassoc}{\ensuremath{\theta}}{Data association vector}{dassoc}
+\sym{setdassoc}{\ensuremath{\Theta}}{Set of all data association vectors}{setdassoc}
+\sym{nobj}{\ensuremath{n}}{Number of objects}{nobj}
+%Define abbreviations here
+% % example
+%\newacronym{awgn}{AWGN}{Additive White Gaussian Noise}
+%% C
+\newacronym{cap}{CAP}{Combat Air Patrol}
+\newacronym{cdf}{CDF}{Cumulative Density Function}
+%% E
+\newacronym{em}{EM}{Electromagnetic}
+\newacronym{esm}{ESM}{Electronic Support Measures}
+%% G
+\newacronym{gnn}{GNN}{Global Nearest Neighbor}
+%% H
+\newacronym{hmm}{HMM}{Hidden Markov Model}
+%% J
+\newacronym{jpda}{JPDA}{Joint Probabilistic Data Association}
+%% M
+\newacronym{mht}{MHT}{Multi Hypothesis Tracker}
+\newacronym{mmse}{MMSE}{Minimum Mean Squared Error}
+\newacronym{mot}{MOT}{Multiple Object Tracking}
+\newacronym{mse}{MSE}{Mean Squared Error}
+%% N
+\newacronym{nlos}{NLOS}{Non Line-of-Sight}
+%% P
+\newacronym{pdf}{PDF}{Probability Density Function}
+\newacronym{pmf}{PMF}{Probability Mass Function}
+%% S
+\newacronym{snr}{SNR}{Signal-to-Noise Ratio}
+\newacronym{sot}{SOT}{Single Object Tracking}
+%% T
+\newacronym{tbd}{TBD}{Track-Before-Detect}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\makeglossaries
+
+\def\mse{\operatorname{MSE}}
+\def\mean{\operatorname{E}}
+\def\var{\operatorname{Var}}

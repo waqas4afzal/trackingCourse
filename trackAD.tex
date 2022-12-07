@@ -1,0 +1,381 @@
+\PassOptionsToPackage{dvipsnames}{xcolor}
+\documentclass[a4paper]{article}
+\usepackage[title]{appendix}
+\usepackage[hidelinks=true]{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{3d,shapes,arrows.meta,positioning,calc,decorations.markings,decorations.text,plotmarks,patterns,backgrounds,external,fit}
+\usepackage{pgfplots}
+%Defining block styles for control block diagrams
+\tikzstyle{block} = [rectangle, rounded corners, minimum width=3em, minimum height=2em,draw]%
+\tikzstyle{line} = [draw, thick, -stealth]
+\usepackage[acronym]{glossaries}
+% for two columns
+\usepackage{glossary-super}
+%\glsdisablehyper %This disables hyper links to glossary items
+\input{acr_and_sym}
+\usepackage{cleveref}
+%opening
+\title{Track Association Problems In AD}%
+\author{Dr. Waqas Afzal}%
+%
+\begin{document}%
+%
+\maketitle%
+\printglossary[title=Nomenclature,nogroupskip,nonumberlist]
+% This command sets the acronym diplay to align in a single column
+\setglossarystyle{alttree}
+% This command sets the width of the acronym column
+\glssetwidest{MMSE}
+% This command sets the font of the acronym in the list of acronyms.
+%\renewcommand{\glsnamefont}[1]{\textmd{#1}}
+\printglossary[title=Acronyms,type=\acronymtype,nogroupskip,nonumberlist]
+\begin{abstract}
+This article provides a survey of the problems arising in multi-target tracking in multi-sensor scenarios in aircraft tracking.
+\end{abstract}
+
+\section{Introduction}
+In scenarios, where multiple overlapping sensors are employed to track multiple aircraft targets, track association becomes of paramount importance. Errors in track association can lead to consequent errors in decision support. This can result in higher level errors in strategy making.\par
+With the increase in the number of sensors being employed to track targets, a common problem faced by air defense operators is that the number of tracks is inconsistent with the number of targets. This affects the operators ability to analyze formations and subsequently, the intent of the aircraft.\par
+This paper provides an introductory survey of the track association problem in the multi-target, multi-sensor scenario. An attempt is made to exhaustively present the basics of this problem.\par
+We shall start off with a couple of definitions:
+\begin{itemize}
+	\item \textbf{\acrfull{sot}}: \gls{sot} is a filtering problem. It can be described as the sequential processing of noisy sensor measurements to determine the object's state:
+	\begin{itemize}
+		\item Position
+		\item Other properties like kinematics, etc.
+		\item Other attributes related to the detected object like \gls{esm} data.
+	\end{itemize}
+	\item \textbf{\acrfull{mot}}: \gls{mot} is the sequential processing of noisy sensor measurements to determine
+	\begin{itemize}
+		\item the number of dynamic objects,
+		\item and each dynamic object's state.
+	\end{itemize}
+	Simply put, \gls{mot}, jointly detects object and applies \gls{sot} to each of these objects.
+\end{itemize}%
+Typically, in tracking problems, we can have multiple sensors like Radars or Cameras, streaming data like radio signals or image pixels to a detector or processor. The detector then obtains the objects of interest from the data and provides measurements corresponding to each dynamic object to the \gls{mot} module (\cref{fig:mot}). The \gls{mot} module processes the measurements and computes the probability densities for the object states.\par%
+\begin{figure}[h]
+	\centering
+	%\includegraphics[width=0.55\linewidth]{Mob2WCC}
+	\resizebox{\linewidth}{!}{%
+		\begin{tikzpicture}[auto]
+			\node[block](sensor){Sensor(s)};
+			\node[below of=sensor, text centered]{Example: Radar};
+			\node[block, right of=sensor] at (4,0)(detector){Detector};
+			\node[block, right of=detector] at (8,0)(mot){\gls{mot}};
+			\node[text width=2cm,right of=mot]at(10,0)(posterior){Posterior Densities for Object States};
+			%drawing arrow between blocks
+			\path[line] (sensor) -- (detector)node[midway,above]{Data};
+			\path[line] (detector) -- (mot)node[midway,above]{Measurements}node[text width=2cm,midway,below, text badly centered]{Exp: Range, Bearing, Doppler};
+			\path[line] (mot) -- (posterior);
+		\end{tikzpicture}
+	}%
+	\caption{\acrfull{mot}}
+	\label{fig:mot}
+\end{figure}
+Scenarios where the detected objects are not easily 'discernible' from the data, the detector can output many false detections. An example of this is a radar detecting objects that are very far away leading to a very low \gls{snr} of their received signal. In such, scenarios a \gls{tbd} approach can be employed where \gls{mot} is applied directly to the sensors' data (\cref{fig:tbd}).
+\begin{figure}[h]
+	\centering
+	%\includegraphics[width=0.55\linewidth]{Mob2WCC}
+	\resizebox{\linewidth}{!}{%
+		\begin{tikzpicture}[auto]
+			\node[block](sensor){Sensor(s)};
+			\node[block, right of=sensor] at (3,0)(mot){\gls{mot}};
+			\node[text width=2cm,right of=mot]at(5,0)(posterior){Posterior Densities for Object States};
+			%drawing arrow between blocks
+			\path[line] (sensor) -- (mot)node[midway,above]{Data};			
+			\path[line] (mot) -- (posterior);
+		\end{tikzpicture}
+	}%
+	\caption{\acrfull{tbd}}
+	\label{fig:tbd}
+\end{figure}
+\section{Types of Tracking}%
+\vbox{Dynamic object tracking can be categorized as follows:
+\begin{enumerate}
+	\item \textbf{Point Object Tracking}: a single detection is returned per object per time step. Therefore, a one-on-one association can be assumed for each object per measurement.
+	\item \textbf{Extended Object Tracking}: multiple detections are returned per object per time step. This can happen due to the size and geometry of objects. For example, a radar can return multiple detection for a single object due to multiple reflections from the same object.
+	\item \textbf{Group Object Tracking}: multiple resolvable objects are treated as a group per time step. The aim is to track the group and not the objects constituting the group. \glspl{cap} can be taken as an example of group object tracking. It has to be noted here that each object in the group returns separate detections.
+	\item \textbf{Tracking With Multi-Path Propagation}: tracking \acrfull{nlos} dynamic objects is known as tracking with multi-path propagation. Radars are mostly used to track \gls{nlos} objects by capturing \gls{em} reflected energy from a surface. Therefore, signals are received from multiple 'paths' per object per time step. This mostly results in multiple detections per object per time step.
+	\item \textbf{Tracking with Unresolved Measurements}: in this case, multiple objects return a single detection. This can be due to the objects moving very closely in a synchronized manner.
+\end{enumerate}}%
+It can be noted here that extended object, group object and multipath based tracking receive multiple detections per object. Tracking with unresolved measurements, on the hand, can be described as multiple objects per measurement tracking.
+\section{Challenges in \acrfull{mot}}
+\gls{mot} is a complex problem where multiple problems need to be solved simultaneously. The challenges faced in \gls{mot} can be summarized as below.
+\begin{itemize}
+	\item The first challenge is detecting objects. Since the number of dynamic object is unknown, detection needs to be done at each time step.
+	\item The states of the detected objects are also unknown, thus their states need to be estimated at each time step.
+	\item The objects are mostly dynamic, thus, their states are constantly changing.
+	\item New objects can enter the sensor's range and objects detected in the previous time step can leave the sensor's range. This is also termed as birth and death of dynamic objects.
+	\item Objects can occlude one another. Therefore, the occluded objects cannot be detected.
+	\item Errors in detection. The sensors used to detect objects have inherent deficiencies and therefore, this can results in false detections (false alarms) or missed detections (errors). \gls{mot} needs to take into consideration these errors as well.
+	\item Finally, the most significant challenge in \gls{mot} is data association. This problem arises due to:
+	\begin{itemize}
+		\item which detections are from objects detected previously.
+		\item which detections are from new objects in the sensors range.
+		\item false detections.
+	\end{itemize}
+\end{itemize}
+\section{Bayesian Filtering}%
+The evolution of an object's states over time can be modeled as a \gls{hmm}. \gls{mot} is basically detection and estimation of the dynamic object's hidden states. The multiple sources of uncertainty mentioned in the previous section makes this an extremely complex task.\par
+Bayesian filters have been shown to perform well in estimating hidden states in the presence of uncertainty. All Bayesian filters successively follow a two step process.
+\begin{itemize}
+	\item \textbf{Motion Update}: Use a motion model to predict the state of the objects in the next time-step.
+	\item \textbf{Measurement Update}: Update the object state's densities using a measurement model based on the measurement obtained in the current time-step.
+\end{itemize}
+Let the state of an object at time step \gls{tstep} be given by $\gls{ostate}_{\gls{tstep}}$ and a measurement at \gls{tstep} be given by $\gls{msmt}_{\gls{tstep}}$. Assuming we have sequence of measurements given by:
+$$\gls{msmt}_{1:\tau}=(\gls{msmt}_1,\gls{msmt}_2,\dots,\gls{msmt}_\tau)$$
+then the posterior is given by
+$$p_{\gls{ostate}_k | \gls{msmt}_{1:\tau}}(\gls{ostate}_k | \gls{msmt}_{1:\tau}) = p(\gls{ostate}_k | \gls{msmt}_{1:\tau})$$
+Assuming that the posterior is Gaussian and the expected value of an object state at time step \gls{tstep} and $\tau$ measurements is given as:
+$$\bar{\gls{ostate}}_{\gls{tstep}|\tau}$$
+then the Gaussian posterior is given by
+$$p(\gls{ostate}_k | \gls{msmt}_{1:\tau})=\mathcal{N}(\gls{ostate}_k ; \bar{\gls{ostate}}_{\gls{tstep}|\tau},P_{\gls{tstep}|\tau})$$
+where $P_{\gls{tstep}|\tau}$ is the covariance matrix.\par
+Bayesian filtering alternatively applies the prediction and measurement updates to update the posterior of the object state at each time step.
+\begin{align}
+	\text{Initial: }&p(\gls{ostate}_1)\nonumber\\
+	\text{Update: }&p(\gls{ostate}_1 | \gls{msmt}_1)\nonumber\\
+	\text{Prediction: }&p(\gls{ostate}_2 | \gls{msmt}_1)\nonumber\\
+	\text{Update: }&p(\gls{ostate}_2 | \gls{msmt}_{1:2})\nonumber\\
+	\text{Prediction: }&p(\gls{ostate}_3 | \gls{msmt}_{1:2})\nonumber\\
+	\text{Update: }&p(\gls{ostate}_3 | \gls{msmt}_{1:3})\nonumber\\
+	\text{Prediction: }&p(\gls{ostate}_4 | \gls{msmt}_{1:3})\nonumber\\
+	\text{Update: }&p(\gls{ostate}_4 | \gls{msmt}_{1:4})\nonumber\\
+	\text{Prediction: }&p(\gls{ostate}_5 | \gls{msmt}_{1:4})\nonumber
+\end{align}
+Due to their simplicity, Bayesian filters are widely employed in tracking problems.\par
+\textbf{Motion Modeling: }The prediction step in Bayesian filtering uses a motion model of the object being tracked to predict the next state of the object based on its current state. The motion model is a function $f$ that maps the current state to the next state of the object
+$$f:\gls{ostate}_k \to \gls{ostate}_{k+1}$$
+accurate prediction helps in data association. Motion models can be categorized as
+\begin{itemize}
+	\item \textbf{Linear}
+	\begin{itemize}
+		\item Constant Velocity
+		\item Constant Acceleration
+	\end{itemize}
+	\item \textbf{Non-linear}
+	\begin{itemize}
+		\item Coordinated Turn
+	\end{itemize}
+\end{itemize}
+Using a motion model is dependent on the current object phase. If the object is moving in a straight line, then constant velocity or acceleration would be good model. However, if an object is turning then the coordinated turn model would be better suited to predict its next state.\par
+Typically, real-life motion is affected by many random factors .e.g. tires can slip when moving. These random factors need to be included in the motion model. Mostly additive Gaussian noise is used to model the random factors affecting the motion.
+$$\gls{ostate}_k = f_{k-1}(\gls{ostate}_{k-1})+q_{k-1}$$
+where $f$ can be a linear or non-linear mapping depending on the motion model. This can be described probabilistically using transition densities
+$$p(\gls{ostate}_k | \gls{ostate}_{k-1})$$
+so for additive Gaussian noise with zero mean and covariance matrix $Q$ the transition density is given by
+$$p(\gls{ostate}_k | \gls{ostate}_{k-1})=\mathcal{N}(\gls{ostate}_k;f_{k-1}(\gls{ostate}_{k-1}), Q_{k-1})$$
+\textbf{Measurement Modeling: }The measurement update step in Bayesian filtering uses a measurement model based on the sensor being used. The data from the sensor is used in the measurement model to generate the measurement update.\par
+The measurement model $h$ describes the relation between the object state and the measurement.
+$$h:\gls{ostate}_k\to\gls{msmt}_k$$
+The measurement model is different for different sensors. Different objects may have different models for the same sensor as well. Typically, sensor measurement are affected by random factors and usually modeled as additive random noise $v$.
+$$\gls{msmt}_k=h_k(\gls{ostate}_k)+v_k$$
+where $h()$ can be a linear or non-linear mapping. The measurement likelihood can then be defined as the density
+$$p(\gls{msmt}_k | \gls{ostate}_k)$$
+if the measurement noise is assumed to be Gaussian with zero mean and covariance $R$ then the measurement likelihood is given as follows
+$$p(\gls{msmt}_k | \gls{ostate}_k)=\mathcal{N}(\gls{msmt}_k;h(\gls{ostate}_k),R_k)$$
+It has to be noted here that Bayesian Filtering does not require the motion and measurement model to be very accurate. The models that provide sufficient prediction and measurement updates are enough for tracking using Bayesian filtering. The design of the models is therefore, open to the designers choice. More accurate modeling would require more computational power.\par
+\subsection{Bayesian Filtering Recursion}
+The Bayesian filtering recursion of prediction and update can be described using the motion and measurement models as follows:
+\begin{itemize}
+	\item \textbf{Prediction (Chapman-Kolmongorov Equation)}: The motion prediction update is computed as follows
+	\begin{equation}
+		\label{eq:prior}
+		{\color{OliveGreen}p(\gls{ostate}_k|\gls{msmt}_{1:k-1})} = \displaystyle\int p(\gls{ostate}_k|\gls{ostate}_{k-1}){\color{BrickRed}p(\gls{ostate}_{k-1}|\gls{msmt}_{1:k-1})} d\gls{ostate}_{k-1}
+	\end{equation}
+	\item \textbf{Update (Bayes Rule)}: Using \cref{eq:prior} as the prior, the measurement update (posterior) can be computed by using the measurement likelihood as follows:
+	\begin{equation}
+		\label{eq:posterior}
+		{\color{BrickRed}p(\gls{ostate}_k|\gls{msmt}_{1:k})} = 
+		\dfrac{p(\gls{msmt}_k|\gls{ostate}_k){\color{OliveGreen}p(\gls{ostate}_k|\gls{msmt}_{1:k-1})}}{\color{NavyBlue}p(\gls{msmt}_k|\gls{msmt}_{1:k-1})}
+	\end{equation}
+	\item \textbf{Predicted Likelihood (Distribution/Probability of Evidence)}
+	\begin{equation}
+		{\color{NavyBlue}p(\gls{msmt}_k|\gls{msmt}_{1:k-1})} = \displaystyle\int p(\gls{msmt}_k|\gls{ostate}_k)p(\gls{ostate}_k|\gls{msmt}_{1:k-1}) d\gls{ostate}_k
+	\end{equation}
+\end{itemize}
+\subsection{Estimators \& Performance Measure}
+Using distributions can give a good intuition regarding the state of an object. However, plotting distributions of multiple object can lead to confusions. Therefore estimates of the objects' states are obtained from the distributions for a clearer visualization.\par
+Estimates are also needed for quantitatively evaluating the performance of the Bayesian Filtering algorithm. For a given posterior $p(\gls{ostate}_k|\gls{msmt}_{1:\tau})$, the estimate $\hat{\gls{ostate}}$ at at time instant $k$ given measurements up to and including time instant $\tau$ is given as:
+$$\hat{\gls{ostate}}_{k|\tau}$$
+\subsubsection{Performance Measure}
+An objective performance measure is needed to gauge the performance of the filtering algorithm. The performance measure provides a way to compare the result with the ground truth. One of the most commonly used measure is the \acrfull{mse}
+\begin{equation}
+	\label{eq:mse}
+	\mse(\hat{\gls{ostate}}_{k|\tau})=\mean\{(\hat{\gls{ostate}}_{k|\tau}-\gls{ostate}_k)^T(\hat{\gls{ostate}}_{k|\tau}-\gls{ostate}_k)\}
+\end{equation}
+Other performance measures can be obtained depending on the application.\par
+Estimates of the object states can also be obtained using the performance measures as well. For example, an estimate of the object states can be obtained by minimizing the \gls{mse}. Commonly known as \acrfull{mmse}
+$$\hat{\gls{ostate}}_{k|\tau}^{\acrshort{mmse}}= \underset{\hat{\gls{ostate}}_{k|\tau}}{\arg\min}~~\mse(\hat{\gls{ostate}}_{k|\tau})$$
+\subsection{Bayesian Filtering Example: Kalman Filter}
+Kalman filter is a widely used Bayesian filter. If the motion and measurement models are linear with addtive Gaussian noise and the prior is also Gaussian, then the Kalman filter gives a closed form solution. In fact if all models are linear and all noise is Gaussian, then the Kalman filter is the \gls{mmse} estimator. Using the following definitions,
+\begin{align}
+	\text{Motion Model: }&p(\gls{ostate}_k|\gls{ostate}_{k-1}) = \mathcal{N}(\gls{ostate}_k;~F_{k-1}\gls{ostate}_{k-1}, ~Q_{k-1})\nonumber\\
+	\text{Measurement Model: }&p(\gls{msmt}_k|\gls{ostate}_k) =  \mathcal{N}(\gls{msmt}_k; ~H_k\gls{ostate}_k, ~R_k)\nonumber\\
+	\text{Initial Density: }&p(\gls{ostate}_0) =  \mathcal{N}(\gls{ostate}_0; ~\bar{\gls{ostate}}_0, ~P_0)\nonumber\\
+	\text{Posterior Density: }&p(\gls{ostate}_k|\gls{msmt}_{1:\tau}) =  \mathcal{N}(\gls{ostate}_k; ~\bar{\gls{ostate}}_{k|\tau}, ~P_{k|\tau})\nonumber\\
+	\text{Expected Value: }&\bar{\gls{ostate}}_{k|\tau}\nonumber\\
+	\text{Covariance: }&P_{k|\tau}\nonumber
+\end{align}
+the Kalman filter updates are given as:
+\begin{align}
+	\text{Prediction: }&\begin{cases}
+		\bar{\gls{ostate}}_{k|k-1}=F_{k-1}\bar{\gls{ostate}}_{k-1|k-1} &\text{Use model to predict}\\
+		P_{k|k-1}=F_{k-1}P_{k-1|k-1}F_{k-1}^T+Q_{k-1} &\text{Increase uncertainty}
+	\end{cases}\nonumber\\
+	\text{Update: }&\begin{cases}
+		\bar{\gls{msmt}}_k=H_k\bar{\gls{ostate}}_{k|k-1} &\text{Predicted Measurement}\\
+		\epsilon_k=\gls{msmt}_k-\bar{\gls{msmt}}_k &\text{Innovation}\\
+		S_k=H_kP_{k|k-1}H_k^T+R_k &\text{Innovation Covariance}\\
+		K_k=P_{k|k-1}H_k^TS_k^{-1} &\text{Kalman gain}\\
+		\bar{\gls{ostate}}_{k|k}=\bar{\gls{ostate}}_{k|k-1} + K_k\epsilon_k &\text{Weighted average}\\
+		P_{k|k}=P_{k|k-1} - K_kH_kP_{k|k-1} &\text{Decrease uncertainty}
+	\end{cases}\nonumber
+\end{align}
+\section{Tracking}
+In object tracking, it is desired to recursively estimate an object's state vector that varies stochastically across time using noisy measurements. This can be achieved using Bayesian Filtering. However, tracking is complicated further by:
+\begin{itemize}
+	\item missed detections. In this scenario the object being tracked is not detected.
+	\item clutter detections. Usually we can ignore clutter detections.
+	\item unknown data-associations. Perhaps the most involved challenge as there is no information regarding measurements and their associations.
+\end{itemize}
+The states of the $n$ objects at time instant $k$ are given by the matrix,
+$$X_k= \left[\gls{ostate}_k^1,\gls{ostate}_k^2,\cdots,\gls{ostate}_k^n\right]$$
+These states need to be tracked in the presence of missed detections and clutter.
+Therefore, the following is needed to track the object:
+\begin{itemize}
+	\item $n$-object measurement model.
+	\item $n$-object motion model.
+	\item $n$-object states prior.
+	\item Methods for handling the data association. Handling multiple measurements association to multiple objects is a challenging problem. 
+\end{itemize}
+Once the aforementioned data is obtained and consolidated, then the $n$ objects can be tracked using the following algorithms.
+\begin{itemize}
+	\item \acrfull{gnn}
+	\item \acrfull{jpda}
+	\item \acrfull{mht}
+\end{itemize}
+\subsection{Multiple Object Measurement Model}
+The probability of detection provides a measure of the chances of detecting an object. At each time instant, an object is either detected or missed. Bernoulli distributions are used to model experiments with binary outcomes. A discrete random variable which takes a true value with probability $p$ and a false value with probability $1-p$ is said to be Bernoulli distributed. If a discrete random variable $b$ is said to be Bernoulli distributed then it is given by:
+\begin{equation}
+	b=\begin{cases}
+		true &\text{with probability $p$}\\
+		false &\text{with probability $1-p$}
+	\end{cases}
+\end{equation}
+The Binomial distribution models a sequence of trials that are Bernoulli distributed. If $j$ Bernoulli experiments are conducted with probability of getting a true value $p$ then the corresponding Binomial random variable $b$ is given as:
+\begin{equation}
+	Pr[b=i]=\binom{j}{i}p^i(1-p)^{j-i}
+\end{equation}
+It can be noted that $\mean[b]=pj$ for the above Binomial distribution.\par
+The Poisson distribution is a discrete probability distribution that models a given number of independent events occurring in a fixed time or space interval with a known constant mean occurrence rate. The distribution of a Poisson random variable $b$ with the mean interval occurrence rate $\lambda$ is given as:
+\begin{equation}
+	Pr[b=i]=Po[i;\lambda]=\dfrac{\lambda^i\exp(-\lambda)}{i!}
+\end{equation}
+It can be noted that $\mean[p]=\var[p]=\lambda$.\par%
+The measurement model can be updated using the probability of detection of objects. Assuming there are $n$ objects that need to be tracked and the object measurement matrix be denoted by \gls{omsmatrix},
+\begin{equation}
+	\gls{omsmatrix}_k=\left[\gls{omsmatrix}_k^1,\gls{omsmatrix}_k^2,\dots,\gls{omsmatrix}_k^n\right]
+\end{equation}
+where, $\gls{omsmatrix}_k^i$, corresponds to the $i^{th}$ object and is given as
+\begin{equation}
+	\gls{omsmatrix}_k^i=\begin{cases}
+		[] &\text{with probability }1-P^D(\gls{ostate}_k^i)\\
+		\gls{omsmt}_k^i &\text{with probability }P^D(\gls{ostate}_k^i)
+	\end{cases}
+\end{equation}
+The likelihood for the measurement vector $\gls{omsmt}_k^i$ is given by
+\begin{equation}
+	p(\gls{omsmt}_k^i|\gls{ostate}_k^i) = g_k(\gls{omsmt}_k^i|\gls{ostate}_k^i)
+\end{equation}
+The measurement model is then given by
+\begin{equation}
+	\label{eq:updmsmodel}
+	p(\gls{omsmatrix}_k^i|\gls{ostate}_k^i)=\begin{cases}
+		1-P^D(\gls{ostate}_k^i) &\text{if }\gls{omsmatrix}_k^i=[]\\
+		P^D(\gls{ostate}_k^i)g_k(\gls{omsmt}_k^i|\gls{ostate}_k^i) &\text{if }\gls{omsmatrix}_k^i=\gls{omsmt}_k^i
+	\end{cases}
+\end{equation}
+\Cref{eq:updmsmodel} captures both the probability of detection and if detected, the distribution of detection.\par
+in the presence of clutter, measurement from clutter will also be received. Let the matrix \gls{cmsmatrix} represent the clutter measurements. The clutter measurements are given as
+\begin{equation}
+	\gls{cmsmatrix}_k=\left[\gls{cmsmt}_k^1,\gls{cmsmt}_k^2,\dots,\gls{cmsmt}_k^{\gls{m}_k^c}\right]
+\end{equation}
+where $\gls{m}_k^c$ represents the number of clutter measurements. The clutter $\gls{cmsmatrix}_k$ is Poisson with intensity,
+\begin{equation}
+	\lambda_c=\bar{\lambda}_cf_c(c)
+\end{equation}
+The measurement matrix at time instant $k$ $\gls{msmatrix}_k$ is then given by
+\begin{equation}
+	\gls{msmatrix}_k=\Pi(\gls{omsmatrix}_k,\gls{cmsmatrix}_k)
+\end{equation}
+where $\Pi$ randomly shuffles the columns of $\gls{omsmatrix}_k$ and $\gls{cmsmatrix}_k$.
+\subsection{Data Association}
+When tracking multiple objects, a sensor will return multiple measurements. Associating this data with each object is a challenging problem. Techniques need to be developed to correctly associate the data to objects as incorrect association will lead to faulty tracking.\par
+The prior for n objects given by,
+$$p(X_0)=p \left(\gls{ostate}_0^1,\gls{ostate}_0^2,\cdots,\gls{ostate}_0^n\right)$$
+If the state random variables are independent then the joint prior density can be written as the product of individual densities. Typically in tracking, the initial prior is assumed to be independent. Therefore it can be written as
+$$p(X_0)=\prod_{i=1}^{n}p^i(\gls{ostate}^i_0)$$
+We need to compute an $n$-dimensional measurement likelihood.
+\begin{equation}
+	p(\gls{msmatrix}_k|\gls{omatrix}_k)
+\end{equation}s
+This can be expressed as the sum over data associations (time indexing dropped for brevity)
+\begin{align}
+	p_{\gls{msmatrix}|\gls{omatrix}}(\gls{msmatrix}|\gls{omatrix}) &= \displaystyle\sum_{\gls{dassoc}\in\gls{setdassoc}}p_{\gls{msmatrix},\gls{dassoc}|\gls{omatrix}}(\gls{msmatrix},\gls{dassoc}|\gls{omatrix}) \\
+	&= 
+	\displaystyle\sum_{\gls{dassoc}\in\gls{setdassoc}}p_{\gls{msmatrix}|\gls{omatrix},\gls{dassoc},m}(\gls{msmatrix}|\gls{omatrix},\gls{dassoc},m)p_{\gls{dassoc},m|\gls{omatrix}}(\gls{dassoc},m|\gls{omatrix})\label{eq:dataassoc2}
+\end{align}
+The number of measurements $m$ represents the width of \gls{msmatrix}, thus introducing it will not affect the distribution. \gls{dassoc} is the data association vector that associates measurements with detected objects or clutter and \gls{setdassoc} is the set of all data association vectors. For \gls{nobj} objects, and $\gls{m}_k$ measurements, the data association vector \gls{dassoc} is $n$-dimensional and each component of \gls{dassoc} can take one of $\gls{m}_k$ values from the following set.
+\begin{equation}
+	\{0,1,2,\dots,\gls{m}_k\}
+\end{equation}
+where $0$ represents a disdetected object and the values $1,2,\dots,\gls{m}_k$ are indices representing the measurements. For example, if we have 2 objects ($\gls{omatrix}=\left[\gls{ostate}_1,\gls{ostate}_2\right]$) and 2 measurements ($\gls{msmatrix}=\left[\gls{msmt}_1,\gls{msmt}_2\right]$), then we can have the following combination of values for the data association vector.
+\begin{align}
+	[0,0]&\to\text{ obj 1: misdetected, }&&\text{obj 2: misdetected}\label{eq:validassoc}\\*
+	[0,1]&\to\text{ obj 1: misdetected, }&&\text{obj 2: measurement 1}\nonumber\\*
+	[0,2]&\to\text{ obj 1: misdetected, }&&\text{obj 2: measurement 1}\nonumber\\*
+	[1,0]&\to\text{ obj 1: measurement 1, }&&\text{obj 2: misdetected}\nonumber\\*
+	[1,2]&\to\text{ obj 1: measurement 1, }&&\text{obj 2: measurement 2}\nonumber\\*
+	[2,0]&\to\text{ obj 1: measurement 2, }&&\text{obj 2: misdetected}\nonumber\\*
+	[2,1]&\to\text{ obj 1: measurement 2, }&&\text{obj 2: measurement 1}\nonumber\\*
+\end{align}
+it has to be noted that the associations $[1,1]$ and $[2,2]$ are missing. This is because the same measurement cannot be associated to two different objects. This arises from the assumption that the object is a point object. So, at most one measurement would represent one object.\par
+The misdetection in the data association represents a measurement with no detection. Therefore, the measurement is associated with clutter. For the associations shown in \cref{eq:validassoc}, the corresponding object and clutter measurements are given in \cref{tab:assoctable}.
+\begin{table}[h]
+	\centering
+	\begin{tabular}{cccccc}
+		$\theta$ & $\gls{omsmatrix}^1$ & $\gls{omsmatrix}^2$ & \gls{cmsmatrix} & $\gls{m}^o$ & $\gls{m}^c$ \\\hline
+		$\left[0,0\right]$ & $[~]$ 			& $[~]$ 		& $[\gls{msmt}_1,\gls{msmt}_2]$ & 0 & 2 \\
+		$\left[0,1\right]$ & $[~]$ 			&$\gls{msmt}_1$ & $\gls{msmt}_2$ 				  & 1 & 1 \\
+		$\left[0,2\right]$ & $[~]$ 			&$\gls{msmt}_2$ & $\gls{msmt}_1$ 				  & 1 & 1 \\
+		$\left[1,0\right]$ & $\gls{msmt}_1$	&$[~]$ & $\gls{msmt}_2$ 				  & 1 & 1 \\
+		$\left[1,2\right]$ & $\gls{msmt}_1$	&$\gls{msmt}_2$ & $[~]$ 						  & 2 & 0 \\
+		$\left[2,0\right]$ & $\gls{msmt}_2$	&$[~]$ & $\gls{msmt}_1$ 				  & 1 & 1 \\
+		$\left[2,1\right]$ & $\gls{msmt}_2$ & $\gls{msmt}_1$ & $[~]$ 						  & 2 & 0
+	\end{tabular}	
+	\caption{Object and Clutter Measurements}
+	\label{tab:assoctable}
+\end{table}
+$\gls{m}^o$ and $\gls{m}^c$ are the number of detected objects and the clutter detections respectively.
+\newpage
+\begin{appendices}
+	\section{Definitions}
+	\textbf{Probability Distributions: } Probability distributions can be provided in different forms depending on whether the random variables are discrete or continuous.
+	\begin{itemize}
+		\item \textbf{Discrete Random Variables}
+		\begin{itemize}
+			\item \textbf{\acrfull{pmf}}: a probability mass function is a function that gives the probability that a discrete random variable is exactly equal to some value.
+		\end{itemize}
+		\item \textbf{Absolutely Continuous Random Variables}
+		\begin{itemize}
+			\item \textbf{\acrfull{pdf}}: describes the infinitesimal probability of any given value, and the probability that the outcome lies in a given interval can be computed by integrating the probability density function over that interval.
+			\item \textbf{\acrfull{cdf}}: describes the probability that the random variable is no larger than a given value (i.e., ${\displaystyle P(X<x)}$ for some ${\displaystyle x}$). The \gls{cdf} is the area under the probability density function from ${\displaystyle -\infty }$  to ${\displaystyle x}$
+		\end{itemize}
+	\end{itemize}
+	\textbf{Probability Distributions: }A mixture distribution is a distribution formed from the weighted combination of two or more component distributions. The component distributions can be univariate or multivariate. For example, a highway is populated by 67\% cars and 33\% trucks. The weight of cars is distributed as Normal(3200, 300) pounds, whereas the weight of trucks is distributed as Normal(12K, 4K). The variability distribution for all vehicles is a mixture of these, with the Normal(3200, 300) distribution given a weight of 0.67, the Normal(12K, 4K) given a weight of 0.33.\par\noindent
+	\textbf{Prior: }a prior probability distribution, often simply called the prior, of an uncertain quantity is the probability distribution that would express one's beliefs about this quantity before some evidence is taken into account. For example, the prior could be the probability distribution representing the chances that the next day could be sunny.\par\noindent
+	\textbf{Posterior: }the probability distribution of the proposition (hypothesis) after taking the evidence (measurement) into account.\par\noindent
+	\textbf{Liklihood: }the probability distribution of the evidence (measurement) given the hypothesis. The likelihood quantifies the extent to which the evidence or measurement supports the proposition or hypothesis.
+\end{appendices}
+\end{document}

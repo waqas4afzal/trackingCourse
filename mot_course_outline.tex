@@ -1,0 +1,106 @@
+\PassOptionsToPackage{dvipsnames}{xcolor}
+\documentclass{beamer}
+\usetheme{Warsaw}
+\usepackage[acronym]{glossaries}
+% for two columns
+\usepackage{glossary-super}
+%\glsdisablehyper %This disables hyper links to glossary items
+\input{acr_and_sym}
+\usepackage{cleveref}
+\title{Multiple Object Tracking: Course Outline}
+\author{Dr. Waqas Afzal}
+\begin{document}
+	\begin{frame}[plain]
+		\maketitle
+	\end{frame}
+	\begin{frame}{Outline}
+		\tableofcontents[hideallsubsections]
+	\end{frame}
+	% Current section
+	\AtBeginSection[ ]
+	{
+		\begin{frame}{Outline}
+			\tableofcontents[
+			currentsection,
+			hideallsubsections]
+		\end{frame}
+		\begin{frame}{Outline}
+			\tableofcontents[
+			currentsection,
+			sectionstyle=show/hide,
+			subsectionstyle=show/show/hide,
+			subsubsectionstyle=show/show/show/hide]
+		\end{frame}
+	}
+	% Current subsection
+	\AtBeginSubsection[ ]
+	{
+		\begin{frame}{Outline}
+			\tableofcontents[
+			currentsection,
+			currentsubsection,
+			sectionstyle=show/hide,
+			subsectionstyle=show/shaded/hide,
+			subsubsectionstyle=show/show/shaded/hide]
+		\end{frame}
+	}
+	% Current subsubsection
+	\AtBeginSubsubsection[ ]
+	{
+		\begin{frame}{Outline}
+			\tableofcontents[
+			currentsection,
+			currentsubsection,
+			sectionstyle=show/hide,
+			subsectionstyle=show/shaded/hide,
+			subsubsectionstyle=show/shaded/hide/hide]
+		\end{frame}
+	}
+	\section{Tracking}
+	\subsection{Introduction}
+	\subsection{Bayesian Filtering}
+	\subsection{Motion Modeling}
+	\subsection{Measurement Modeling}
+	\subsection{Kalman Filter: A Bayesian Filtering Example}
+	
+	\section{Single Object Tracking}	
+	\subsection{Introduction}
+	\begin{frame}{Introduction}{\acrfull{sot} and \acrfull{mot}}
+		\textbf{\acrfull{sot}}: \acrshort{sot} is a			filtering problem. It can be described as the sequential processing of noisy sensor measurements to determine an object’s state:
+		\begin{itemize}
+			\item Position.
+			\item Other properties like kinematics, etc.
+			\item Other attributes related to the detected object like \gls{esm} data.
+		\end{itemize}
+	\end{frame}
+	\subsection{Prediction \& Measurement Updates}
+	\subsection{Clutter Modeling}
+	\subsection{Data Association}
+	\subsection{Algorithms}
+	\subsubsection{Nearest Neighbors}
+	\subsubsection{Probabilistic Data Association}
+	\subsubsection{Gaussian Sum Filtering}
+	\subsection{Gating}
+	\section{Multiple Object Tracking}
+	\subsection{Introduction: n Object Tracking}
+	\subsection{n Object Measurements Modeling}
+	\subsection{Estimating n Object Density}
+	\subsection{n Object Data Association}
+	\subsection{Algorithms: n Object Tracking}
+		\subsubsection{Global Nearest Neighbors (GNN)}
+		\subsubsection{Joint Probability Density Association (JPDA)}
+	\subsection{Multi Hypothesis Tracker}	
+	\section{Random Finite Sets}
+	\subsection{Introduction}
+	\subsection{Common Random Finite Sets}
+	\subsection{Standard Models in MOT}
+	\subsection{Probabilistic Hypothesis Density Filtering}
+	\subsection{Metrics in MOT}
+	\section{Multiple Object Tracking Using Conjugate Pairs}
+	\subsection{Introduction}
+	\subsection{Modeling a Changing Number of Objects}
+	\subsection{Multi-Bernoulli Mixture Filter}
+	\subsection{Poisson Multi-Bernoulli Mixture Filter}
+	\subsection{MOT Filter Implementation}
+	\subsection{Labels}	
+\end{document}
